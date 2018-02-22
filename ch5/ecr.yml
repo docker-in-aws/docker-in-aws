@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: AWS CloudFormation Starter Template
+
+Resources:
+  TodobackendRepository:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: docker-in-aws/todobackend
+      RepositoryPolicyText:
+        Version: '2008-10-17'
+        Statement:
+        - Sid: RemoteAccountAccess
+          Effect: Allow
+          Principal:
+            AWS: arn:aws:iam::158949774536:root
+            Service: codebuild.amazonaws.com
+          Action:
+          - ecr:GetDownloadUrlForLayer
+          - ecr:BatchGetImage
+          - ecr:BatchCheckLayerAvailabilityity
