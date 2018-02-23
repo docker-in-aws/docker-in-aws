@@ -1,0 +1,7 @@
+version: v1
+default: sandbox
+clusters:
+  sandbox:
+    cluster: sandbox-cluster
+    region: us-east-1
+    default_launch_type: EC2
