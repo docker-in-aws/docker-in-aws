@@ -27,7 +27,7 @@
       ],
       "tags": {
         "Name": "Docker in AWS ECS Base Image 2017.09.h",
-        "SourceAMI": "ami-5e414e24",
+        "SourceAMI": "{{ .SourceAMI }}",
         "DockerVersion": "17.09.1-ce",
         "ECSAgentVersion": "1.17.0-2"
       }
