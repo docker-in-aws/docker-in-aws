@@ -12,7 +12,7 @@
       "secret_key": "{{user `aws_secret_access_key`}}",
       "token": "{{user `aws_session_token`}}",
       "region": "us-east-1",
-      "source_ami": "ami-5e414e24",
+      "source_ami": "ami-cb17d8b6",
       "instance_type": "t2.micro",
       "ssh_username": "ec2-user",
       "associate_public_ip_address": "true",
@@ -26,10 +26,10 @@
         }
       ],
       "tags": {
-        "Name": "Docker in AWS ECS Base Image 2017.09.h",
+        "Name": "Docker in AWS ECS Base Image 2017.09.k",
         "SourceAMI": "{{ .SourceAMI }}",
-        "DockerVersion": "17.09.1-ce",
-        "ECSAgentVersion": "1.17.0-2"
+        "DockerVersion": "17.12.0-ce",
+        "ECSAgentVersion": "1.17.2"
       }
     }
   ],
