@@ -19,3 +19,22 @@ Resources:
           - ecr:GetDownloadUrlForLayer
           - ecr:BatchGetImage
           - ecr:BatchCheckLayerAvailability
+      LifecyclePolicy:
+       LifecyclePolicyText: |
+         {
+            "rules": [
+              {
+                "rulePriority": 10,
+                "description": "Untagged images",
+                "selection": {
+                  "tagStatus": "untagged",
+                  "countType": "sinceImagePushed",
+                  "countUnit": "days",
+                  "countNumber": 7
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
