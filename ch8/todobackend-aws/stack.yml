@@ -316,8 +316,7 @@ Resources:
       AllocatedStorage: 10
       StorageType: gp2
       MasterUsername: todobackend
-      MasterUserPassword:
-        Ref: DatabasePassword
+      MasterUserPassword: !Ref DatabasePassword
       DBName: todobackend
       VPCSecurityGroups:
         - !Ref ApplicationDatabaseSecurityGroup
