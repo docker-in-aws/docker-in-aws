@@ -10,11 +10,10 @@ logout:
 	docker logout 385605022855.dkr.ecr.us-east-1.amazonaws.com
 
 test:
-	docker-compose build --pull test
+	docker-compose build --pull release
 	docker-compose run test
 
 release:
-	docker-compose build release
 	docker-compose up --exit-code-from migrate migrate
 	docker-compose run app python3 manage.py collectstatic --no-input
 	docker-compose up -d app

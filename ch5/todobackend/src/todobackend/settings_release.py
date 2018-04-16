@@ -8,7 +8,7 @@ DEBUG = True
 SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
 
 # Must be explicitly specified when Debug is disabled
-ALLOWED_HOSTS = [os.environ.get('ALLOWED_HOSTS', '*')]
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
 # Database settings
 DATABASES = {
@@ -19,6 +19,9 @@ DATABASES = {
         'PASSWORD': os.environ.get('MYSQL_PASSWORD','password'),
         'HOST': os.environ.get('MYSQL_HOST','localhost'),
         'PORT': os.environ.get('MYSQL_PORT','3306'),
+    },
+    'OPTIONS': {
+      'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
     }
 }
 

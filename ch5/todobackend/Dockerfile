@@ -32,6 +32,7 @@ CMD ["python3", "manage.py", "test", "--noinput"]
 
 # Production build
 FROM alpine
+LABEL application=todobackend
 
 # Install dependencies
 RUN apk add --no-cache bash mariadb-client-libs

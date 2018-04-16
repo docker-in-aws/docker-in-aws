@@ -116,8 +116,8 @@ Resources:
                 print("ECS task %s completed successfully" % task)
                 cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, task)
             except Exception as e:
-              print("ECS task %s failed with exception %s" % (task, e))
-              cfnresponse.send(event, context, cfnresponse.FAILED, {}, task)
+              print("A failure occurred with exception %s" % e)
+              cfnresponse.send(event, context, cfnresponse.FAILED, {})
   EcsTaskRunnerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -316,7 +316,8 @@ Resources:
       AllocatedStorage: 10
       StorageType: gp2
       MasterUsername: todobackend
-      MasterUserPassword: !Ref DatabasePassword
+      MasterUserPassword:
+        Ref: DatabasePassword
       DBName: todobackend
       VPCSecurityGroups:
         - !Ref ApplicationDatabaseSecurityGroup
