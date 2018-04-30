@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-set -e
-
 echo "### Performing final clean-up tasks ###"
 sudo stop ecs
 sudo docker system prune -f -a
