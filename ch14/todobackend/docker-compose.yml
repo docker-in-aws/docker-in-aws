@@ -1,0 +1,69 @@
+version: '2.3'
+
+volumes:
+  public:
+    driver: local
+
+services:
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: build
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings_test
+      TEST_OUTPUT_DIR: /build
+      AWS_XRAY_TRACING_NAME: todobackend
+  release:
+    image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings_release
+      MYSQL_HOST: db
+      MYSQL_USER: todo
+      MYSQL_PASSWORD: password
+      AWS_XRAY_TRACING_NAME: todobackend
+  app:
+    image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:${APP_VERSION}
+    extends:
+      service: release
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000"
+    volumes:
+      - public:/public
+    command:
+      - uwsgi
+      - --http=0.0.0.0:8000
+      - --module=todobackend.wsgi
+      - --master
+      - --die-on-term
+      - --processes=4
+      - --threads=2
+      - --check-static=/public
+  migrate:
+    extends:
+      service: release
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - python3
+      - manage.py
+      - migrate
+      - --no-input
+  db:
+    image: mysql:5.7
+    healthcheck:
+      test: mysqlshow -u $$MYSQL_USER -p$$MYSQL_PASSWORD
+    expose:
+      - "3306"
+    environment:
+      MYSQL_DATABASE: todobackend
+      MYSQL_USER: todo
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: password
