@@ -1,4 +1,4 @@
-version: '2.3'
+version: '2.4'
 
 volumes:
   public:
@@ -9,10 +9,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      target: build
+      target: test
     environment:
-      DJANGO_SETTINGS_MODULE: todobackend.settings_test
-      TEST_OUTPUT_DIR: /build
       AWS_XRAY_TRACING_NAME: todobackend
   release:
     image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:latest
@@ -32,10 +30,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000"
     volumes:
       - public:/public
+    ports:
+      - 8000
+    environment:
+      APP_URL: http://app:8000
     command:
       - uwsgi
       - --http=0.0.0.0:8000
@@ -60,8 +60,6 @@ services:
     image: mysql:5.7
     healthcheck:
       test: mysqlshow -u $$MYSQL_USER -p$$MYSQL_PASSWORD
-    expose:
-      - "3306"
     environment:
       MYSQL_DATABASE: todobackend
       MYSQL_USER: todo
