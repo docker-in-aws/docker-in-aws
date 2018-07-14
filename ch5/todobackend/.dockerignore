@@ -1,2 +1,6 @@
-__pycache__
+**/*.sqlite3
+**/*.xml
+**/.coverage
+**/__pycache__
 **/*.pyc
+**/.DS_Store
