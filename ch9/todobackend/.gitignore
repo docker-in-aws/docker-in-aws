@@ -1,9 +1,13 @@
-# Ignore the virtual environment
-venv
+# Ignore SQLite database files
+*.sqlite3
+
+# Ignore test output files
+*.xml
+.coverage
 
 # Ignore compiled Python source files
 *.pyc
 __pycache__
 
-# Ignore SQLite database files
-*.sqlite3
+# Miscellaneous
+.DS_Store
