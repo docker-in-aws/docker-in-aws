@@ -13,7 +13,7 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 # Database settings
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'mysql.connector.django',
         'NAME': os.environ.get('MYSQL_DATABASE','todobackend'),
         'USER': os.environ.get('MYSQL_USER','todo'),
         'PASSWORD': os.environ.get('MYSQL_PASSWORD','password'),
