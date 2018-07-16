@@ -1,0 +1,20 @@
+branch-defaults:
+  default:
+    environment: Todobackend-env
+environment-defaults:
+  Todobackend-env:
+    branch: null
+    repository: null
+global:
+  application_name: todobackend
+  default_ec2_keyname: null
+  default_platform: arn:aws:elasticbeanstalk:us-east-1::platform/Multi-container Docker
+    running on 64bit Amazon Linux/2.11.0
+  default_region: us-east-1
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: docker-in-aws
+  sc: null
+  workspace_type: Application
