@@ -830,6 +830,8 @@ Resources:
       TaskRoleArn: !Sub ${ApplicationTaskRole.Arn}
       Volumes:
         - Name: public
+          Host:
+            SourcePath: /data/public
       ContainerDefinitions:
         - Name: todobackend
           Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/docker-in-aws/todobackend:${ApplicationImageTag}
@@ -1036,29 +1038,6 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
-  ApplicationAutoscalingSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: !Sub ${AWS::StackName} Application Autoscaling Security Group
-      VpcId: !Ref VpcId
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
-      SecurityGroupEgress:
-        - IpProtocol: udp
-          FromPort: 53
-          ToPort: 53
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: 0.0.0.0/0
-        - IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
-          CidrIp: 0.0.0.0/0
   ApplicationAutoscalingInstanceProfile:
     Type: AWS::IAM::InstanceProfile
     Properties:
@@ -1118,6 +1097,10 @@ Resources:
       AWS::CloudFormation::Init:
         config:
           commands:
+            05_public_volume:
+              command: mkdir -p /data/public
+            06_public_volume_permissions:
+              command: chown -R 1000:1000 /data/public
             10_first_run:
               command: sh firstrun.sh
               cwd: /home/ec2-user
