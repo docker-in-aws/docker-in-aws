@@ -19,8 +19,7 @@ release:
 	docker-compose build app migrate
 	docker-compose up --exit-code-from migrate migrate
 	docker-compose run app python3 manage.py collectstatic --no-input
-	docker-compose up -d app
-	docker-compose run app bats acceptance.bats
+	docker-compose up --exit-code-from acceptance acceptance
 	@ echo App running at http://$$(docker-compose port app 8000 | sed s/0.0.0.0/localhost/g)
 
 publish:
