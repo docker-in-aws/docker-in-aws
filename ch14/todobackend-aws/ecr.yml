@@ -7,21 +7,6 @@ Resources:
     Type: AWS::ECR::Repository
     Properties:
       RepositoryName: docker-in-aws/xray
-  CodebuildRepository:
-    Type: AWS::ECR::Repository
-    Properties:
-      RepositoryName: docker-in-aws/codebuild
-      RepositoryPolicyText:
-        Version: '2008-10-17'
-        Statement:
-        - Sid: CodeBuildAccess
-          Effect: Allow
-          Principal:
-            Service: codebuild.amazonaws.com
-          Action:
-          - ecr:GetDownloadUrlForLayer
-          - ecr:BatchGetImage
-          - ecr:BatchCheckLayerAvailability
   TodobackendRepository:
     Type: AWS::ECR::Repository
     Properties:
