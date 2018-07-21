@@ -1,0 +1,124 @@
+version: '3.6'
+
+networks:
+  net:
+    driver: overlay
+
+volumes:
+  public:
+    driver: cloudstor:aws
+    driver_opts:
+      backing: shared
+  data:
+    driver: cloudstor:aws
+    driver_opts: 
+      backing: relocatable
+      size: 10
+      ebstype: gp2
+
+secrets:
+  todobackend_mysql_password:
+    external: true
+  todobackend_mysql_root_password:
+    external: true
+  todobackend_secret_key:
+    external: true
+
+services:
+  app:
+    image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:${APP_VERSION}
+    ports:
+      - target: 8000
+        published: 80
+    networks:
+      - net
+    volumes:
+      - public:/public
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings_release
+      AWS_XRAY_TRACING_NAME: todobackend
+      MYSQL_HOST: db
+      MYSQL_USER: todo
+    secrets:
+      - source: todobackend_mysql_password
+        target: MYSQL_PASSWORD
+      - source: todobackend_secret_key
+        target: SECRET_KEY
+    command:
+      - uwsgi
+      - --http=0.0.0.0:8000
+      - --module=todobackend.wsgi
+      - --master
+      - --die-on-term
+      - --processes=4
+      - --threads=2
+      - --check-static=/public
+    deploy:
+      replicas: 2
+      update_config:
+        parallelism: 1
+        delay: 30s
+  migrate:
+    image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:${APP_VERSION}
+    networks:
+      - net
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings_release
+      MYSQL_HOST: db
+      MYSQL_USER: todo
+    secrets:
+      - source: todobackend_mysql_password
+        target: MYSQL_PASSWORD
+    command:
+      - python3
+      - manage.py
+      - migrate
+      - --no-input
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 6
+  collectstatic:
+    image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:${APP_VERSION}
+    volumes:
+      - public:/public
+    environment:
+      DJANGO_SETTINGS_MODULE: todobackend.settings_release
+    networks:
+      - net
+    command:
+      - python3
+      - manage.py
+      - collectstatic
+      - --no-input
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 6
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: todobackend
+      MYSQL_USER: todo
+      MYSQL_PASSWORD_FILE: /run/secrets/mysql_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
+    secrets:
+      - source: todobackend_mysql_password
+        target: mysql_password
+      - source: todobackend_mysql_root_password
+        target: mysql_root_password
+    networks:
+      - net
+    volumes:
+      - data:/var/lib/mysql
+    command:
+      - --ignore-db-dir=lost+found
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
