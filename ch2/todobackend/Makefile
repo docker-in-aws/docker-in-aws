@@ -10,7 +10,7 @@ test:
 	docker-compose run test
 
 release:
-	docker-compose build app migrate
+	docker-compose build
 	docker-compose up --exit-code-from migrate migrate
 	docker-compose run app python3 manage.py collectstatic --no-input
 	docker-compose up --exit-code-from acceptance acceptance
