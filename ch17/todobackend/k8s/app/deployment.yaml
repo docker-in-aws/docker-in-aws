@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todobackend
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-enabled: "true"
+    service.beta.kubernetes.io/aws-load-balancer-connection-draining-timeout: "60"
+spec:
+  selector:
+    app: todobackend
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todobackend
+  labels:
+    app: todobackend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: todobackend
+  template:
+    metadata:
+      labels:
+        app: todobackend
+    spec:
+      securityContext:
+        fsGroup: 1000
+      volumes:
+      - name: public
+        emptyDir: {}
+      - name: secrets
+        secret:
+          secretName: todobackend-secret
+          items:
+          - key: MYSQL_PASSWORD
+            path: MYSQL_PASSWORD
+          - key: SECRET_KEY
+            path: SECRET_KEY
+      initContainers:
+      - name: collectstatic
+        image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - name: public
+          mountPath: /public
+        command: ["python3","manage.py","collectstatic","--no-input"]
+        env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: todobackend.settings_release
+      containers:
+      - name: todobackend
+        image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend
+        imagePullPolicy: IfNotPresent
+        readinessProbe:
+          httpGet:
+            port: 8000
+        livenessProbe:
+          httpGet:
+            port: 8000
+        volumeMounts:
+        - name: public
+          mountPath: /public
+        - name: secrets
+          mountPath: /tmp/secrets
+          readOnly: true
+        command:
+        - uwsgi
+        - --http=0.0.0.0:8000
+        - --module=todobackend.wsgi
+        - --master
+        - --die-on-term
+        - --processes=4
+        - --threads=2
+        - --check-static=/public
+        env:
+        - name: DJANGO_SETTINGS_MODULE
+          value: todobackend.settings_release
+        - name: AWS_XRAY_TRACING_NAME
+          value: todobackend
+        - name: SECRETS_ROOT
+          value: /tmp/secrets
+        - name: MYSQL_HOST
+          value: todobackend-db
+        - name: MYSQL_USER
+          value: todo

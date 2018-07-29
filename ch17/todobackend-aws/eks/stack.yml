@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: EKS Cluster
+
+Parameters:
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: Target subnets for EKS cluster
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: Target VPC
+
+Resources:
+  EksServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: eks-service-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - eks.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
+        - arn:aws:iam::aws:policy/AmazonEKSServicePolicy
+  EksClusterSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: eks-cluster-control-plane-sg
+      GroupDescription: EKS Cluster Control Plane Security Group
+      VpcId: !Ref VpcId
+      Tags:
+        - Key: Name
+          Value: eks-cluster-sg
+  EksCluster:
+    Type: AWS::EKS::Cluster
+    Properties:
+      Name: eks-cluster
+      RoleArn: !Sub ${EksServiceRole.Arn}
+      ResourcesVpcConfig:
+        SubnetIds: !Ref Subnets
+        SecurityGroupIds: 
+          - !Ref EksClusterSecurityGroup

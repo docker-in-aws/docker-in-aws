@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todobackend-db
+spec:
+  selector:
+    app: todobackend-db
+  clusterIP: None 
+  ports:
+  - protocol: TCP
+    port: 3306
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todobackend-db
+  labels:
+    app: todobackend-db
+spec:
+  selector:
+    matchLabels:
+      app: todobackend-db
+  template:
+    metadata:
+      labels:
+        app: todobackend-db
+    spec:
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: todobackend-data
+      - name: secrets
+        secret:
+          secretName: todobackend-secret
+          items:
+          - key: MYSQL_PASSWORD
+            path: MYSQL_PASSWORD
+          - key: MYSQL_ROOT_PASSWORD
+            path: MYSQL_ROOT_PASSWORD
+      containers:
+      - name: db
+        image: mysql:5.7
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "mysqlshow -h 127.0.0.1 -u $(MYSQL_USER) -p$(cat /tmp/secrets/MYSQL_PASSWORD)"
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+        - name: secrets
+          mountPath: /tmp/secrets
+          readOnly: true
+        args:
+        - --ignore-db-dir=lost+found
+        env:
+        - name: MYSQL_DATABASE
+          value: todobackend
+        - name: MYSQL_USER
+          value: todo
+        - name: MYSQL_ROOT_PASSWORD_FILE
+          value: /tmp/secrets/MYSQL_ROOT_PASSWORD
+        - name: MYSQL_PASSWORD_FILE
+          value: /tmp/secrets/MYSQL_PASSWORD
