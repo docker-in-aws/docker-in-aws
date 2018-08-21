@@ -25,12 +25,143 @@ Parameters:
     Description: Target VPC
 
 Resources:
+  MigrateTask:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - ApplicationAutoscaling
+      - ApplicationDatabase
+    Properties:
+      ServiceToken: !Sub ${EcsTaskRunner.Arn}
+      Cluster: !Ref ApplicationCluster
+      TaskDefinition: !Ref MigrateTaskDefinition
+  MigrateTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: todobackend-migrate
+      ContainerDefinitions:
+        - Name: migrate
+          Image: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/docker-in-aws/todobackend:${ApplicationImageTag}
+          MemoryReservation: 5
+          Cpu: 5
+          Environment:
+            - Name: DJANGO_SETTINGS_MODULE
+              Value: todobackend.settings_release
+            - Name: MYSQL_HOST
+              Value: !Sub ${ApplicationDatabase.Endpoint.Address}
+            - Name: MYSQL_USER
+              Value: todobackend
+            - Name: MYSQL_PASSWORD
+              Value: !Ref DatabasePassword
+            - Name: MYSQL_DATABASE
+              Value: todobackend
+          Command:
+            - python3
+            - manage.py
+            - migrate
+            - --no-input
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Sub /${AWS::StackName}/ecs/todobackend
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: docker
+  EcsTaskRunner:
+    Type: AWS::Lambda::Function
+    DependsOn:
+    - EcsTaskRunnerLogGroup
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-ecsTasks
+      Description: !Sub ${AWS::StackName} ECS Task Runner
+      Handler: index.handler
+      MemorySize: 128
+      Runtime: python3.6
+      Timeout: 300
+      Role: !Sub ${EcsTaskRunnerRole.Arn}
+      Code:
+        ZipFile: |
+          import cfnresponse
+          import boto3
+
+          client = boto3.client('ecs')
+
+          def handler(event, context):
+            try:
+              print("Received event %s" % event)
+              if event['RequestType'] == 'Delete':
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, event['PhysicalResourceId'])
+                return
+              tasks = client.run_task(
+                cluster=event['ResourceProperties']['Cluster'],
+                taskDefinition=event['ResourceProperties']['TaskDefinition'],
+                overrides=event['ResourceProperties'].get('Overrides',{}),
+                count=1,
+                startedBy=event['RequestId']
+              )
+              task = tasks['tasks'][0]['taskArn']
+              print("Started ECS task %s" % task)
+              waiter = client.get_waiter('tasks_stopped')
+              waiter.wait(
+                cluster=event['ResourceProperties']['Cluster'],
+                tasks=[task],
+              )
+              result = client.describe_tasks(
+                cluster=event['ResourceProperties']['Cluster'],
+                tasks=[task]
+              )
+              exitCode = result['tasks'][0]['containers'][0]['exitCode']
+              if exitCode > 0:
+                print("ECS task %s failed with exit code %s" % (task, exitCode))
+                cfnresponse.send(event, context, cfnresponse.FAILED, {}, task)
+              else:
+                print("ECS task %s completed successfully" % task)
+                cfnresponse.send(event, context, cfnresponse.SUCCESS, {}, task)
+            except Exception as e:
+              print("A failure occurred with exception %s" % e)
+              cfnresponse.send(event, context, cfnresponse.FAILED, {})
+  EcsTaskRunnerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      Policies:
+        - PolicyName: EcsTaskRunnerPermissions
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+            - Sid: EcsTasks
+              Effect: Allow
+              Action:
+              - ecs:DescribeTasks
+              - ecs:ListTasks
+              - ecs:RunTask
+              Resource: "*"
+              Condition:
+                ArnEquals:
+                  ecs:cluster: !Sub ${ApplicationCluster.Arn}
+            - Sid: ManageLambdaLogs
+              Effect: Allow
+              Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+              Resource: !Sub ${EcsTaskRunnerLogGroup.Arn}
+  EcsTaskRunnerLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}-ecsTasks
+      RetentionInDays: 7
   ApplicationService:
     Type: AWS::ECS::Service
     DependsOn:
       - ApplicationAutoscaling
       - ApplicationLogGroup
       - ApplicationLoadBalancerHttpListener
+      - MigrateTask
     Properties:
       TaskDefinition: !Ref ApplicationTaskDefinition
       Cluster: !Ref ApplicationCluster
@@ -362,3 +493,8 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ApplicationAutoscaling-instance
           PropagateAtLaunch: "true"
+
+Outputs:
+  PublicURL:
+    Description: Public DNS name of Application Load Balancer
+    Value: !Sub ${ApplicationLoadBalancer.DNSName}
