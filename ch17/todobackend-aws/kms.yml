@@ -22,12 +22,12 @@ Resources:
   KmsKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: alias/ssm-key
+      AliasName: alias/secrets-key
       TargetKeyId: !Ref KmsKey
 
 Outputs:
   KmsKey:
-    Description: SSM Key KMS Key Arn
+    Description: Secrets Key KMS Key Arn
     Value: !Sub ${KmsKey.Arn}
     Export:
-      Name: ssm-key
+      Name: secrets-key

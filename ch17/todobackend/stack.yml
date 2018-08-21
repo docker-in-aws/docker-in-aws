@@ -36,7 +36,6 @@ services:
       - public:/public
     environment:
       DJANGO_SETTINGS_MODULE: todobackend.settings_release
-      AWS_XRAY_TRACING_NAME: todobackend
       MYSQL_HOST: db
       MYSQL_USER: todo
     secrets:
