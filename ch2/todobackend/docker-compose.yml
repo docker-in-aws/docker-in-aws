@@ -29,6 +29,8 @@ services:
       - public:/public
     healthcheck:
       test: curl -fs localhost:8000
+      interval: 3s
+      retries: 10
     ports:
       - 8000
     command:
@@ -36,10 +38,10 @@ services:
       - --http=0.0.0.0:8000
       - --module=todobackend.wsgi
       - --master
+      - --check-static=/public
       - --die-on-term
       - --processes=4
       - --threads=2
-      - --check-static=/public
   acceptance:
     extends:
       service: release
@@ -49,7 +51,7 @@ services:
     environment:
       APP_URL: http://app:8000
     command:
-      - bats
+      - bats 
       - acceptance.bats
   migrate:
     extends:
@@ -66,6 +68,8 @@ services:
     image: mysql:5.7
     healthcheck:
       test: mysqlshow -u $$MYSQL_USER -p$$MYSQL_PASSWORD
+      interval: 3s
+      retries: 10
     environment:
       MYSQL_DATABASE: todobackend
       MYSQL_USER: todo
