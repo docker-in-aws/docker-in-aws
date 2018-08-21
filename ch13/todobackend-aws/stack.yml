@@ -633,7 +633,7 @@ Resources:
               Effect: Allow
               Action:
               - kms:Decrypt
-              Resource: !ImportValue ssm-key
+              Resource: !ImportValue secrets-key
             - Sid: ManageLambdaLogs
               Effect: Allow
               Action:
@@ -822,7 +822,7 @@ Resources:
               Effect: Allow
               Action:
               - kms:Decrypt
-              Resource: !ImportValue ssm-key
+              Resource: !ImportValue secrets-key
   ApplicationTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -1130,7 +1130,7 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     CreationPolicy:
       ResourceSignal:
-        Count: !Ref ApplicationDesiredCount
+        Count: 1
         Timeout: PT15M
     UpdatePolicy:
       AutoScalingRollingUpdate:
@@ -1140,7 +1140,7 @@ Resources:
           - AZRebalance
           - AlarmNotification
           - ScheduledActions
-        MinInstancesInService: !Ref ApplicationDesiredCount
+        MinInstancesInService: 1
         MinSuccessfulInstancesPercent: 100
         WaitOnResourceSignals: "true"
         PauseTime: PT15M
@@ -1154,3 +1154,8 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ApplicationAutoscaling-instance
           PropagateAtLaunch: "true"
+
+Outputs:
+  PublicURL:
+    Description: Public DNS name of Application Load Balancer
+    Value: !Sub ${ApplicationLoadBalancer.DNSName}
