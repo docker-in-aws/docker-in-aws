@@ -27,3 +27,5 @@ DATABASES = {
 
 STATIC_ROOT = os.environ.get('STATIC_ROOT', '/public/static')
 MEDIA_ROOT = os.environ.get('MEDIA_ROOT', '/public/media')
+
+MIDDLEWARE.insert(0,'aws_xray_sdk.ext.django.middleware.XRayMiddleware')

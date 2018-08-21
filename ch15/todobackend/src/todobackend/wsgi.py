@@ -16,6 +16,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "todobackend.settings")
 from aws_xray_sdk.core import xray_recorder
 from aws_xray_sdk.core import patch_all
 
+# Required to avoid SegmentNameMissingException errors
+xray_recorder.configure(service="todobackend")
+
 patch_all()
 
 application = get_wsgi_application()

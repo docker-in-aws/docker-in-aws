@@ -10,8 +10,6 @@ services:
       context: .
       dockerfile: Dockerfile
       target: test
-    environment:
-      AWS_XRAY_TRACING_NAME: todobackend
   release:
     image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:latest
     build:
@@ -22,7 +20,6 @@ services:
       MYSQL_HOST: db
       MYSQL_USER: todo
       MYSQL_PASSWORD: password
-      AWS_XRAY_TRACING_NAME: todobackend
   app:
     image: 385605022855.dkr.ecr.us-east-1.amazonaws.com/docker-in-aws/todobackend:${APP_VERSION}
     extends:
@@ -34,6 +31,8 @@ services:
       - public:/public
     healthcheck:
       test: curl -fs localhost:8000
+      interval: 3s
+      retries: 10
     ports:
       - 8000
     command:
@@ -41,10 +40,10 @@ services:
       - --http=0.0.0.0:8000
       - --module=todobackend.wsgi
       - --master
+      - --check-static=/public
       - --die-on-term
       - --processes=4
       - --threads=2
-      - --check-static=/public
   acceptance:
     extends:
       service: release
@@ -54,7 +53,7 @@ services:
     environment:
       APP_URL: http://app:8000
     command:
-      - bats
+      - bats 
       - acceptance.bats
   migrate:
     extends:
@@ -71,6 +70,8 @@ services:
     image: mysql:5.7
     healthcheck:
       test: mysqlshow -u $$MYSQL_USER -p$$MYSQL_PASSWORD
+      interval: 3s
+      retries: 10
     environment:
       MYSQL_DATABASE: todobackend
       MYSQL_USER: todo
