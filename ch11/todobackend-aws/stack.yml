@@ -285,7 +285,7 @@ Resources:
               Effect: Allow
               Action:
               - kms:Decrypt
-              Resource: !ImportValue ssm-key
+              Resource: !ImportValue secrets-key
             - Sid: ManageLambdaLogs
               Effect: Allow
               Action:
@@ -474,7 +474,7 @@ Resources:
               Effect: Allow
               Action:
               - kms:Decrypt
-              Resource: !ImportValue ssm-key
+              Resource: !ImportValue secrets-key
   ApplicationTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Properties:
@@ -800,3 +800,8 @@ Resources:
         - Key: Name
           Value: !Sub ${AWS::StackName}-ApplicationAutoscaling-instance
           PropagateAtLaunch: "true"
+
+Outputs:
+  PublicURL:
+    Description: Public DNS name of Application Load Balancer
+    Value: !Sub ${ApplicationLoadBalancer.DNSName}
